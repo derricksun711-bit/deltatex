@@ -2,6 +2,8 @@
 
 **A semantic risk diff for mathematical LaTeX.**
 
+[简体中文](./README.zh-CN.md)
+
 Git shows that `j` became `j-1`. DeltaTeX explains that a summation bound
 changed and marks the edit for review.
 
