@@ -1,0 +1,24 @@
+name: New semantic-risk rule
+description: Propose an explainable mathematical change detector.
+title: "[Rule] "
+labels: ["enhancement", "good first issue"]
+body:
+  - type: textarea
+    attributes:
+      label: Real-world problem
+      description: What small edit can materially change a paper?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Before and after formulas
+      render: latex
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Near miss
+      description: Give a visually similar edit that must not trigger this rule.
+    validations:
+      required: true
+

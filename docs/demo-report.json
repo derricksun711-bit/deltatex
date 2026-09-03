@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "old_equations": 2,
+    "new_equations": 2,
+    "unchanged": 0,
+    "changed": 2,
+    "added": 0,
+    "removed": 0,
+    "risks": {
+      "high": 2,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "findings": [
+    {
+      "key": "eq:accumulation",
+      "label": "eq:accumulation",
+      "old_index": 1,
+      "new_index": 1,
+      "old_line": 4,
+      "new_line": 4,
+      "status": "changed",
+      "risk": "high",
+      "changes": [
+        "summation upper bound changed: j -> j-1"
+      ],
+      "before": "\\label{eq:accumulation}\n  x_j = \\sum_{k=i}^{j} A_k x_k.",
+      "after": "\\label{eq:accumulation}\n  x_j = \\sum_{k=i}^{j-1} A_k x_k."
+    },
+    {
+      "key": "eq:stability",
+      "label": "eq:stability",
+      "old_index": 2,
+      "new_index": 2,
+      "old_line": 9,
+      "new_line": 9,
+      "status": "changed",
+      "risk": "high",
+      "changes": [
+        "inequality operator changed: \\le -> \\ge"
+      ],
+      "before": "\\label{eq:stability}\n  \\mathbb{E}\\|x_k\\|^2 \\leq C\\rho^k\\|x_0\\|^2.",
+      "after": "\\label{eq:stability}\n  \\mathbb{E}\\|x_k\\|^2 \\geq C\\rho^k\\|x_0\\|^2."
+    }
+  ]
+}

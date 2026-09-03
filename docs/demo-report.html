@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeltaTeX report</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font: 15px system-ui, sans-serif; background: #f8fafc; color: #172033; margin: 0; }
+    main { max-width: 1000px; margin: auto; padding: 40px 20px; }
+    h1 { margin-bottom: 4px; }
+    .summary { color: #475569; margin-bottom: 28px; }
+    .finding { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; margin: 14px 0; box-shadow: 0 4px 16px #0f172a0a; }
+    .heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .heading span { color: white; padding: 3px 9px; border-radius: 99px; font-size: 12px; white-space: nowrap; }
+    ul { color: #334155; padding-left: 22px; }
+    .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .formula { background: #f1f5f9; border-radius: 9px; padding: 12px; min-width: 0; }
+    .formula.before { border-left: 4px solid #94a3b8; }
+    .formula.after { border-left: 4px solid #2563eb; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; }
+    small { color: #64748b; font-weight: 600; }
+    @media (max-width: 640px) {
+      main { padding: 24px 12px; }
+      .formula-grid { grid-template-columns: 1fr; }
+      .heading { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>DeltaTeX</h1>
+    <p class="summary">2 equations · 2 changed · 2 high-risk</p>
+    
+        <article class="finding">
+          <div class="heading"><strong>eq:accumulation</strong>
+          <span style="background:#dc2626">changed · high</span></div>
+          <ul><li>summation upper bound changed: j -&gt; j-1</li></ul>
+          <div class="formula-grid">
+            <div class="formula before"><small>Old formula · line 4</small><pre>\label{eq:accumulation}
+  x_j = \sum_{k=i}^{j} A_k x_k.</pre></div>
+            <div class="formula after"><small>New formula · line 4</small><pre>\label{eq:accumulation}
+  x_j = \sum_{k=i}^{j-1} A_k x_k.</pre></div>
+          </div>
+        </article>
+        <article class="finding">
+          <div class="heading"><strong>eq:stability</strong>
+          <span style="background:#dc2626">changed · high</span></div>
+          <ul><li>inequality operator changed: \le -&gt; \ge</li></ul>
+          <div class="formula-grid">
+            <div class="formula before"><small>Old formula · line 9</small><pre>\label{eq:stability}
+  \mathbb{E}\|x_k\|^2 \leq C\rho^k\|x_0\|^2.</pre></div>
+            <div class="formula after"><small>New formula · line 9</small><pre>\label{eq:stability}
+  \mathbb{E}\|x_k\|^2 \geq C\rho^k\|x_0\|^2.</pre></div>
+          </div>
+        </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deltatex"
+version = "0.1.0"
+description = "A semantic risk diff for mathematical LaTeX."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Derrick" }]
+keywords = ["latex", "diff", "mathematics", "research", "cli"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/derricksun711-bit/deltatex"
+Repository = "https://github.com/derricksun711-bit/deltatex"
+Issues = "https://github.com/derricksun711-bit/deltatex/issues"
+Changelog = "https://github.com/derricksun711-bit/deltatex/blob/main/CHANGELOG.md"
+
+[project.scripts]
+deltatex = "deltatex.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
