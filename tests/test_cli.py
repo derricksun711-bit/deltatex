@@ -116,5 +116,49 @@ class DeltaTeXCliTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["risks"]["high"], 1)
 
 
+    def _check_equation_summary(self, old_text, new_text, expected, counts):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old, new = root / "old.tex", root / "new.tex"
+            html_path, json_path = root / "report.html", root / "report.json"
+            old.write_text(old_text, encoding="utf-8")
+            new.write_text(new_text, encoding="utf-8")
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = main([str(old), str(new), "--html", str(html_path), "--json", str(json_path)])
+            self.assertEqual(code, 0)
+            self.assertEqual(output.getvalue().splitlines()[1], expected)
+            html = html_path.read_text(encoding="utf-8")
+            self.assertIn(f'<p class="summary">{expected}</p>', html)
+            self.assertNotIn("equations scanned", output.getvalue() + html)
+            summary = json.loads(json_path.read_text(encoding="utf-8"))["summary"]
+            self.assertEqual(set(summary), {
+                "old_equations", "new_equations", "unchanged", "changed", "added", "removed", "risks",
+            })
+            for key, value in counts.items():
+                self.assertEqual(summary[key], value)
+
+    def test_all_equations_removed_summary(self):
+        self._check_equation_summary(
+            r"\[x=y\]", "",
+            "1 old equation | 0 new equations | 0 unchanged | 0 changed | 0 added | 1 removed",
+            {"old_equations": 1, "new_equations": 0, "removed": 1},
+        )
+
+    def test_unequal_old_new_summary(self):
+        self._check_equation_summary(
+            r"\[x=y\]\[z=1\]", r"\[x=y\]",
+            "2 old equations | 1 new equation | 1 unchanged | 0 changed | 0 added | 1 removed",
+            {"old_equations": 2, "new_equations": 1, "unchanged": 1, "removed": 1},
+        )
+
+    def test_added_equations_summary(self):
+        self._check_equation_summary(
+            "", r"\[x=y\]\[z=1\]",
+            "0 old equations | 2 new equations | 0 unchanged | 0 changed | 2 added | 0 removed",
+            {"old_equations": 0, "new_equations": 2, "added": 2},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

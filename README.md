@@ -1,6 +1,6 @@
 # DeltaTeX
 
-**A semantic risk diff for mathematical LaTeX.**
+**Semantic risk diff for mathematical LaTeX.**
 
 [简体中文](./README.zh-CN.md)
 
@@ -11,7 +11,7 @@ changed and marks the edit for review.
 
 ```text
 DeltaTeX semantic risk report
-2 equations scanned | 0 unchanged | 2 changed | 0 added | 0 removed
+2 old equations | 2 new equations | 0 unchanged | 2 changed | 0 added | 0 removed
 [HIGH] eq:accumulation: summation upper bound changed: j -> j-1
 [HIGH] eq:stability: inequality operator changed: \\le -> \\ge
 ```
@@ -121,6 +121,15 @@ The lightweight extractor supports `equation`, `align`, `gather`,
 - It is not a full LaTeX parser and does not establish mathematical equivalence.
 - Complex custom macros and deeply nested syntax may not be understood.
 - Version 0.1 compares one input file per version; it does not expand `\input`.
+- Recognized summation bounds and inverse/transpose exponents are excluded before
+  comparing other scripts; nested or alternative bound syntax may fall back to
+  generic findings.
+- Scripts and operations are compared as lists, without binding them to variable
+  bases or proving that a symbol is a matrix. Moving an unchanged exponent between
+  variables may receive only a generic finding, or no separate explanation when
+  another rule fires. Composite inverse/transpose exponents are not classified.
+- `additional formula tokens changed` is a conservative remainder notice, not an
+  exhaustive account of every edit; the highest matched risk still applies.
 - An `align` environment is treated as one display block.
 - Unlabeled equations are aligned by position, so insertions can shift matches.
 

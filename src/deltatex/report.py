@@ -10,12 +10,20 @@ from pathlib import Path
 COLORS = {"high": "#dc2626", "medium": "#d97706", "low": "#2563eb", "none": "#64748b"}
 
 
+def _equation_summary(summary: dict) -> str:
+    old, new = summary["old_equations"], summary["new_equations"]
+    return (
+        f"{old} old equation{'s' if old != 1 else ''} | "
+        f"{new} new equation{'s' if new != 1 else ''} | "
+        f"{summary['unchanged']} unchanged | {summary['changed']} changed | "
+        f"{summary['added']} added | {summary['removed']} removed"
+    )
+
+
 def terminal_summary(result: dict) -> str:
-    summary = result["summary"]
     lines = [
         "DeltaTeX semantic risk report",
-        f"{summary['new_equations']} equations scanned | {summary['unchanged']} unchanged | "
-        f"{summary['changed']} changed | {summary['added']} added | {summary['removed']} removed",
+        _equation_summary(result["summary"]),
     ]
     for finding in result["findings"]:
         if finding["status"] == "unchanged":
@@ -80,7 +88,7 @@ def write_html(result: dict, path: Path) -> None:
 <body>
   <main>
     <h1>DeltaTeX</h1>
-    <p class="summary">{summary['new_equations']} equations · {summary['changed']} changed · {summary['risks']['high']} high-risk</p>
+    <p class="summary">{_equation_summary(summary)}</p>
     {''.join(cards)}
   </main>
 </body>

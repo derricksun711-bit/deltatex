@@ -21,6 +21,12 @@ BRACKET_RE = re.compile(r"\\\[(?P<body>.*?)\\\]", re.DOTALL)
 LABEL_RE = re.compile(r"\\label\{([^{}]+)\}")
 COMMENT_RE = re.compile(r"(?<!\\)%.*$")
 SUM_RE = re.compile(r"\\sum_\{([^{}]*)\}\^\{([^{}]*)\}")
+INEQUALITY_RE = re.compile(r"\\(?:leq?|geq?)(?![A-Za-z])|(?<![<>=])[<>](?![=])")
+MATRIX_OP_PATTERNS = {
+    "matrix inverse": re.compile(r"\^\{-1\}|\^-1(?![0-9])"),
+    "matrix transpose": re.compile(r"\^(?:\{\\top\}|\\top(?![A-Za-z])|\{T\}|T(?![A-Za-z]))"),
+}
+SCRIPT_RE = re.compile(r"([_^])(?:\{([^{}]*)\}|([A-Za-z0-9]+))")
 CONTROL_WORD_BOUNDARY = "\ue000"
 
 
@@ -109,24 +115,38 @@ def extract_equations(text: str) -> list[Equation]:
 
 
 def _inequalities(value: str) -> list[str]:
-    token_re = re.compile(r"\\(?:leq?|geq?)|(?<![<>=])[<>](?![=])")
-    return token_re.findall(value)
+    return INEQUALITY_RE.findall(value)
 
 
 def _matrix_ops(value: str) -> list[str]:
-    patterns = {
-        "matrix inverse": r"\^\{?-1\}?",
-        "matrix transpose": r"\^(?:\{\\top\}|\\top|\{T\}|T)",
-    }
     found: list[str] = []
-    for name, pattern in patterns.items():
-        found.extend([name] * len(re.findall(pattern, value)))
+    for name, pattern in MATRIX_OP_PATTERNS.items():
+        found.extend([name] * len(pattern.findall(value)))
     return found
 
 
 def _scripts(value: str, marker: str) -> list[str]:
-    matches = re.findall(rf"\{marker}(?:\{{([^{{}}]*)\}}|([A-Za-z0-9]+))", value)
-    return [braced or bare for braced, bare in matches]
+    return [braced or bare for kind, braced, bare in SCRIPT_RE.findall(value)
+            if kind == marker]
+
+
+def _without_special_scripts(value: str) -> str:
+    """Exclude only recognized bounds and operation exponents, not whole formulas."""
+    value = SUM_RE.sub(lambda _: r"\sum", value)
+    for pattern in MATRIX_OP_PATTERNS.values():
+        value = pattern.sub("", value)
+    return value
+
+
+def _remaining_tokens(value: str) -> str:
+    """Conservative remainder; this does not associate scripts with their bases."""
+    value = _without_special_scripts(value)
+    value = SCRIPT_RE.sub("", value)
+    # A removed control word may leave its normalization boundary behind.
+    value = re.sub(
+        rf"(?:{INEQUALITY_RE.pattern}){CONTROL_WORD_BOUNDARY}?", "", value
+    )
+    return value
 
 
 def _summation_change(old_sums: list[tuple[str, str]], new_sums: list[tuple[str, str]]) -> list[str]:
@@ -172,20 +192,23 @@ def _describe_change(before: str, after: str) -> tuple[str, tuple[str, ...]]:
         )
         risk = "high"
 
-    old_sub, new_sub = _scripts(before, "_"), _scripts(after, "_")
-    if old_sub != new_sub and not sum_changed:
+    old_rest, new_rest = _without_special_scripts(before), _without_special_scripts(after)
+    old_sub, new_sub = _scripts(old_rest, "_"), _scripts(new_rest, "_")
+    if old_sub != new_sub:
         changes.append(
             f"subscript changed: {_format_values(old_sub)} -> {_format_values(new_sub)}"
         )
         risk = "high" if risk == "high" else "medium"
 
-    old_sup, new_sup = _scripts(before, "^"), _scripts(after, "^")
-    if old_sup != new_sup and old_ops == new_ops and not sum_changed:
+    old_sup, new_sup = _scripts(old_rest, "^"), _scripts(new_rest, "^")
+    if old_sup != new_sup:
         changes.append(
             f"superscript changed: {_format_values(old_sup)} -> {_format_values(new_sup)}"
         )
         risk = "high" if risk == "high" else "medium"
 
+    if changes and _remaining_tokens(before) != _remaining_tokens(after):
+        changes.append("additional formula tokens changed")
     if not changes:
         changes.append("formula tokens changed; no high-risk rule matched")
     return risk, tuple(changes)

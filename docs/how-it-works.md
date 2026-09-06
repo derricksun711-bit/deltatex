@@ -36,6 +36,21 @@ When labels are missing, v0.1 falls back to document order. Inserting one
 unlabeled equation can therefore shift later matches. A future matcher can use
 token similarity as a secondary signal, but must expose its confidence.
 
+## Multiple changes in one formula
+
+The comparison removes recognized summation-bound spans and inverse/transpose
+exponents from temporary comparison strings before comparing ordinary scripts.
+This avoids duplicate script findings without suppressing unrelated scripts in
+the same formula. The original formulas remain intact in every report.
+
+After recognized bounds, operations, inequalities and flat scripts are removed,
+a different remainder adds `additional formula tokens changed`. This notice
+inherits the highest matched risk and does not claim precise token attribution.
+Rules compare lists, not syntax trees or base/exponent associations: nested
+bounds, composite exponents and moved operations can still lack a specific
+explanation. An unchanged operation count does not establish unchanged meaning.
+The operation label is a syntactic heuristic and does not prove a base is a matrix.
+
 ## Existing ecosystem
 
 - [latexdiff on CTAN](https://ctan.org/pkg/latexdiff) creates visually marked-up

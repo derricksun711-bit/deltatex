@@ -132,5 +132,87 @@ class DeltaTeXCoreTests(unittest.TestCase):
         self.assertEqual(finding["risk"], "high")
 
 
+    def test_sum_bound_and_unrelated_subscript(self):
+        finding = compare_documents(
+            r"\[\sum_{i=1}^{K} x_i + z_j\]",
+            r"\[\sum_{i=1}^{K-1} x_i + z_k\]",
+        )["findings"][0]
+        self.assertEqual(finding["risk"], "high")
+        self.assertEqual(finding["changes"], (
+            "summation upper bound changed: K -> K-1",
+            "subscript changed: i, j -> i, k",
+        ))
+
+    def test_inverse_and_unrelated_superscript(self):
+        finding = compare_documents(r"\[Ax+z^2=b\]", r"\[A^{-1}x+z^3=b\]")["findings"][0]
+        self.assertEqual(finding["risk"], "high")
+        self.assertEqual(finding["changes"], (
+            "matrix operation changed: none -> matrix inverse",
+            "superscript changed: 2 -> 3",
+        ))
+
+    def test_sum_bound_does_not_duplicate_scripts(self):
+        changes = compare_documents(
+            r"\[\sum_{i=1}^{K} x_i\]", r"\[\sum_{i=1}^{K-1} x_i\]",
+        )["findings"][0]["changes"]
+        self.assertEqual(changes, ("summation upper bound changed: K -> K-1",))
+
+    def test_inverse_added_does_not_duplicate_superscript(self):
+        changes = compare_documents(r"\[Ax=b\]", r"\[A^{-1}x=b\]")["findings"][0]["changes"]
+        self.assertEqual(changes, ("matrix operation changed: none -> matrix inverse",))
+
+    def test_social_preview_combination_has_exactly_three_changes(self):
+        finding = compare_documents(
+            r"\[\sum_{i=1}^{K} x_i \le y,\quad Ax=b\]",
+            r"\[\sum_{i=1}^{K-1} x_i < y,\quad A^{-1}x=b\]",
+        )["findings"][0]
+        self.assertEqual(finding["risk"], "high")
+        self.assertEqual(finding["changes"], (
+            "summation upper bound changed: K -> K-1",
+            r"inequality operator changed: \le -> <",
+            "matrix operation changed: none -> matrix inverse",
+        ))
+
+    def test_high_risk_change_keeps_unclassified_token_notice(self):
+        finding = compare_documents(
+            r"\[\sum_{i=1}^{K} x_i + y\]",
+            r"\[\sum_{i=1}^{K-1} x_i - y\]",
+        )["findings"][0]
+        self.assertEqual(finding["changes"], (
+            "summation upper bound changed: K -> K-1",
+            "additional formula tokens changed",
+        ))
+
+    def test_inverse_to_transpose_keeps_unrelated_script(self):
+        changes = compare_documents(
+            r"\[A^{-1}x + z^2=b\]", r"\[A^{\top}x + z^3=b\]",
+        )["findings"][0]["changes"]
+        self.assertEqual(changes, (
+            "matrix operation changed: matrix inverse -> matrix transpose",
+            "superscript changed: 2 -> 3",
+        ))
+
+    def test_sum_bound_keeps_unrelated_superscript(self):
+        changes = compare_documents(
+            r"\[\sum_{i=1}^{K} x_i + z^2\]", r"\[\sum_{i=1}^{K-1} x_i + z^3\]",
+        )["findings"][0]["changes"]
+        self.assertEqual(changes, (
+            "summation upper bound changed: K -> K-1",
+            "superscript changed: 2 -> 3",
+        ))
+
+    def test_operation_regex_does_not_consume_longer_exponent(self):
+        changes = compare_documents(r"\[Ax=b\]", r"\[A^{-10}x=b\]")["findings"][0]["changes"]
+        self.assertEqual(changes, ("superscript changed: none -> -10",))
+
+    def test_transpose_inverse_is_not_classified_as_matrix_operation(self):
+        changes = compare_documents(r"\[Ax=b\]", r"\[A^{-\top}x=b\]")["findings"][0]["changes"]
+        self.assertEqual(changes, (r"superscript changed: none -> -\top",))
+
+    def test_longer_control_word_is_not_an_inequality(self):
+        changes = compare_documents(r"\[x=y\]", r"\[x\leadsto y\]")["findings"][0]["changes"]
+        self.assertEqual(changes, ("formula tokens changed; no high-risk rule matched",))
+
+
 if __name__ == "__main__":
     unittest.main()
