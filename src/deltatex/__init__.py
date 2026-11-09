@@ -3,5 +3,5 @@
 from .core import compare_documents
 
 __all__ = ["compare_documents"]
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 

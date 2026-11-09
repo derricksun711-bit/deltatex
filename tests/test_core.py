@@ -74,6 +74,43 @@ class DeltaTeXCoreTests(unittest.TestCase):
         new = "\\begin{equation}x=y\\end{equation}"
         self.assertEqual(compare_documents(old, new)["summary"]["unchanged"], 1)
 
+    def test_commented_displays_do_not_produce_findings(self):
+        commented = "\r\n".join([
+            r"% \begin{equation}x \le y\end{equation}",
+            r"% \[a = b\]",
+            r"% \begin{equation}",
+        ])
+        active = r"\begin{equation}z = w\end{equation}"
+        result = compare_documents(active, commented + "\r\n" + active)
+        self.assertEqual(result["summary"]["unchanged"], 1)
+        self.assertEqual(len(result["findings"]), 1)
+        self.assertEqual(result["findings"][0]["new_line"], 4)
+
+    def test_commented_label_and_closing_delimiter_are_ignored(self):
+        old = "\n".join([
+            r"\begin{equation}",
+            r"% \label{eq:ignored} \end{equation}",
+            r"\label{eq:real} x \le y",
+            r"\end{equation}",
+        ])
+        new = r"\begin{equation}\label{eq:real} x \ge y\end{equation}"
+        findings = compare_documents(old, new)["findings"]
+        self.assertEqual(len(findings), 1)
+        finding = findings[0]
+        self.assertEqual((finding["label"], finding["status"]), ("eq:real", "changed"))
+        self.assertEqual(finding["changes"], (r"inequality operator changed: \le -> \ge",))
+        self.assertEqual(finding["before"], "\n".join(old.splitlines()[1:3]))
+
+    def test_percent_signs_respect_escaped_backslashes(self):
+        text = "\n".join([
+            r"\[ 50\% + x % \] ignored closing delimiter",
+            r"+ y \\% \[ ignored opening delimiter",
+            r"+ z \]",
+        ])
+        equations = extract_equations(text)
+        self.assertEqual(len(equations), 1)
+        self.assertEqual(equations[0].normalized, r"50\%+x+y\\+z")
+
     def test_unclassified_token_change_is_low_risk(self):
         old = r"\begin{equation}\label{eq:c}x+y=z\end{equation}"
         new = r"\begin{equation}\label{eq:c}x-y=z\end{equation}"

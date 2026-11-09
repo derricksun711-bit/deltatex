@@ -2,6 +2,14 @@
 
 All notable changes to DeltaTeX will be documented here.
 
+## 0.1.2 - 2026-11-09
+
+### Fixed
+
+- ignore commented-out display equations, delimiters, and labels when extracting
+  and matching formulas, while preserving original source text and line numbers;
+- distinguish escaped percent signs from comments following escaped backslashes.
+
 ## 0.1.1 - 2026-09-06
 
 ### Fixed

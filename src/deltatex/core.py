@@ -19,7 +19,7 @@ ENV_RE = re.compile(
 )
 BRACKET_RE = re.compile(r"\\\[(?P<body>.*?)\\\]", re.DOTALL)
 LABEL_RE = re.compile(r"\\label\{([^{}]+)\}")
-COMMENT_RE = re.compile(r"(?<!\\)%.*$")
+COMMENT_RE = re.compile(r"(?<!\\)((?:\\\\)*)%[^\r\n]*")
 SUM_RE = re.compile(r"\\sum_\{([^{}]*)\}\^\{([^{}]*)\}")
 INEQUALITY_RE = re.compile(r"\\(?:leq?|geq?)(?![A-Za-z])|(?<![<>=])[<>](?![=])")
 MATRIX_OP_PATTERNS = {
@@ -55,8 +55,12 @@ class Finding:
     after: str | None
 
 
-def _strip_comments(text: str) -> str:
-    return "\n".join(COMMENT_RE.sub("", line) for line in text.splitlines())
+def _mask_comments(text: str) -> str:
+    """Blank comments while preserving source offsets and escaped percent signs."""
+    return COMMENT_RE.sub(
+        lambda match: match[1] + " " * (match.end() - match.end(1)),
+        text,
+    )
 
 
 def _replace_control_word(value: str, source: str, target: str) -> str:
@@ -68,7 +72,7 @@ def _replace_control_word(value: str, source: str, target: str) -> str:
 
 def normalize_latex(value: str) -> str:
     """Remove layout-only noise while preserving mathematical tokens."""
-    value = _strip_comments(value)
+    value = _mask_comments(value)
     value = LABEL_RE.sub("", value)
     value = _replace_control_word(value, "left", "")
     value = _replace_control_word(value, "right", "")
@@ -91,14 +95,17 @@ def normalize_latex(value: str) -> str:
 
 
 def extract_equations(text: str) -> list[Equation]:
-    matches: list[tuple[int, str]] = []
-    matches.extend((m.start(), m.group("body")) for m in ENV_RE.finditer(text))
-    matches.extend((m.start(), m.group("body")) for m in BRACKET_RE.finditer(text))
-    matches.sort(key=lambda item: item[0])
+    active_text = _mask_comments(text)
+    matches = sorted(
+        [*ENV_RE.finditer(active_text), *BRACKET_RE.finditer(active_text)],
+        key=lambda match: match.start(),
+    )
 
     equations: list[Equation] = []
-    for index, (position, body) in enumerate(matches, start=1):
-        label_match = LABEL_RE.search(body)
+    for index, match in enumerate(matches, start=1):
+        start, end = match.span("body")
+        body = text[start:end]
+        label_match = LABEL_RE.search(match["body"])
         label = label_match.group(1) if label_match else None
         key = label or f"equation-{index}"
         equations.append(
@@ -106,7 +113,7 @@ def extract_equations(text: str) -> list[Equation]:
                 key=key,
                 label=label,
                 index=index,
-                line=text.count("\n", 0, position) + 1,
+                line=text.count("\n", 0, match.start()) + 1,
                 latex=body.strip(),
                 normalized=normalize_latex(body),
             )
